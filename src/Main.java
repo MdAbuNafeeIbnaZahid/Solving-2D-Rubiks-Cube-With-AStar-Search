@@ -212,18 +212,22 @@ class Grid implements Comparable<Grid>
         {
             for (int j = 0; j < size; j++)
             {
-                int addee = Integer.MAX_VALUE;
+                int addee = size/2;
 
                 for (int k = 0; k < size; k++)
                 {
                     if ( this.ar[i][j] == goalGrid.ar[k][j] )
                     {
-                        addee = Integer.min( addee, Math.abs( k-i ) );
+                        int dis = Math.abs( k-i );
+                        dis = Integer.min(dis, size-dis);
+                        addee = Integer.min( addee, dis );
                     }
 
                     if ( this.ar[i][j] == goalGrid.ar[i][k] )
                     {
-                        addee = Integer.min( addee, Math.abs( k-j ) );
+                        int dis = Math.abs( k-j );
+                        dis = Integer.min(dis, size-dis);
+                        addee = Integer.min( addee, dis );
                     }
                 }
 
@@ -349,24 +353,28 @@ class Node  implements Comparable<Node>
     @Override
     public int compareTo(Node o) {
 
-
-
-
-        if ( this.fVal == o.fVal )
+        if ( Double.compare(this.fVal, o.fVal) == 0 )
         {
             return this.grid.compareTo( o.grid );
         }
+        return Double.compare(this.fVal, o.fVal);
 
-        if ( this.fVal < o.fVal )
-        {
-            return -1;
-        }
-        else if ( this.fVal > o.fVal )
-        {
-            return 1;
-        }
 
-        return 0;
+//        if ( this.fVal == o.fVal )
+//        {
+//            return this.grid.compareTo( o.grid );
+//        }
+//
+//        if ( this.fVal < o.fVal )
+//        {
+//            return -1;
+//        }
+//        else if ( this.fVal > o.fVal )
+//        {
+//            return 1;
+//        }
+
+//        return 0;
     }
 
     @Override
@@ -445,7 +453,7 @@ class Solver
         while ( priorityQueue.size() > 0 )
         {
 
-            System.out.println( "priorityQueue.size() = " + priorityQueue.size() );
+//            System.out.println( "priorityQueue.size() = " + priorityQueue.size() );
 //            System.out.println("printing priorityQueue");
 //            printPQ( priorityQueue );
 
@@ -454,14 +462,14 @@ class Solver
 
             Node currentNode = priorityQueue.poll();
 
-            System.out.println( "currentNode = " + currentNode );
-
-            System.out.println(  );
+//            System.out.println( "currentNode = " + currentNode );
+//
+//            System.out.println(  );
 
             Grid currentGrid = currentNode.grid;
             double currentFScore = currentNode.fVal;
 
-            assert  currentFScore >= 0  : "currentFScore can't be < 0 ";
+//            assert  currentFScore >= 0  : "currentFScore can't be < 0 ";
 
             int currentGScore = gScore.get( currentGrid );
 
@@ -473,26 +481,60 @@ class Solver
             if ( currentGrid.getHeuristics( goalGrid ) == 0 )
             {
                 System.out.println(" Total move needed = " + gScore.get(currentGrid) );
+                System.out.println( "fScore of goalGrid = " + fScore.get(currentGrid) );
                 return gScore.get(currentGrid);
             }
 
 
             ArrayList<Pair<Grid,Move>> neighborAr = currentGrid.getAllChildren();
-            System.out.println( "NeighborAr = " + neighborAr );
-            System.out.println(  " neighborAr.size() = " + neighborAr.size() );
+//            System.out.println( "NeighborAr = " + neighborAr );
+//            System.out.println(  " neighborAr.size() = " + neighborAr.size() );
             for ( Pair<Grid,Move> pair : neighborAr )
             {
                 Grid child = pair.getKey();
                 Move move = pair.getValue();
                 int tentativeGScore = currentGScore+1;
-                double tentativeFScore = tentativeGScore + child.getHeuristics(goalGrid);
+                double childHVal = child.getHeuristics(goalGrid);
+                double tentativeFScore = tentativeGScore + childHVal;
                 if ( gScore.containsKey(child) && gScore.get(child)<=tentativeGScore )
                 {
                     continue;
                 }
 
+
+                tentativeFScore = Double.max(tentativeFScore, currentFScore);
+                if ( fScore.containsKey(child) && fScore.get(child)<=tentativeFScore )
+                {
+                    continue;
+                }
+
+
+//                if ( Double.compare(tentativeFScore, currentFScore) < 0 )
+//                {
+//                    System.out.println(" tentativeFScore can't be smaller than currentFScore ");
+//                    System.out.println( "tentativeFScore = " + tentativeFScore );
+//                    System.out.println("currentFScore = " + currentFScore);
+//                    System.exit(0);
+//                }
+
                 priorityQueue.add( new Node(tentativeFScore, child) );
                 cameFrom.put(child, move);
+
+
+                if ( child.compareTo(goalGrid)==0 )
+                {
+                    System.out.println("currentGScore = " + currentGScore);
+                    System.out.println( "currentFScore = " + currentFScore );
+                    System.out.println( "currentHVal = " + currentGrid.getHeuristics(goalGrid) );
+                    System.out.println( "currentGrid = " + currentGrid );
+
+
+                    System.out.println( "tentativeGScore = " + tentativeGScore );
+                    System.out.println("tentativeFScore = " + tentativeFScore);
+                    System.out.println("childHVal = " + childHVal);
+                }
+
+
                 gScore.put(child, tentativeGScore);
                 fScore.put( child, tentativeFScore );
 
