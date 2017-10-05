@@ -2,6 +2,7 @@
 import javafx.util.Pair;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -29,6 +30,15 @@ class Move
         this.rowOrCol = rowOrCol;
         this.rowColNum = rowColNum;
         this.typ = typ;
+    }
+
+    @Override
+    public String toString() {
+        return "Move{" +
+                "rowOrCol=" + rowOrCol +
+                ", rowColNum=" + rowColNum +
+                ", typ=" + typ +
+                '}';
     }
 }
 
@@ -185,6 +195,11 @@ class Grid implements Comparable<Grid>
 
     int getManhatanDistance(Grid goalGrid)
     {
+
+//        System.out.println( "in getManHatanDistance" );
+//        System.out.println( "this = " + this );
+//        System.out.println("goalGrid = " + goalGrid);
+
         int ret = 0;
         if ( size != goalGrid.size )
         {
@@ -201,19 +216,55 @@ class Grid implements Comparable<Grid>
 
                 for (int k = 0; k < size; k++)
                 {
-                    if ( this.ar[k][j] == goalGrid.ar[k][j] )
+                    if ( this.ar[i][j] == goalGrid.ar[k][j] )
                     {
                         addee = Integer.min( addee, Math.abs( k-i ) );
                     }
 
-                    if ( this.ar[i][k] == goalGrid.ar[i][k] )
+                    if ( this.ar[i][j] == goalGrid.ar[i][k] )
                     {
                         addee = Integer.min( addee, Math.abs( k-j ) );
                     }
                 }
 
+                if ( addee >= Integer.MAX_VALUE )
+                {
+                    System.out.println("addee " + addee);
+                    System.out.println("i = " + i + ", j= " + j);
+
+                    System.out.println( " this.ar[i][j] = " + this.ar[i][j] );
+
+                    for (int k = 0; k < size; k++)
+                    {
+
+                        System.out.println("k = " + k + ",j = " + j );
+                        System.out.println( " this.ar[k][j] = " + this.ar[k][j] );
+                        System.out.println("goalGrid.ar[k][j] =  " + goalGrid.ar[k][j] );
+                        if ( this.ar[i][j] == goalGrid.ar[k][j] )
+                        {
+                            System.out.println("k = " + k + "j = " + j);
+//                            addee = Integer.min( addee, Math.abs( k-i ) );
+                        }
+
+                        if ( this.ar[i][j] == goalGrid.ar[i][k] )
+                        {
+//                            addee = Integer.min( addee, Math.abs( k-j ) );
+                        }
+                    }
+
+
+                    System.exit(0);
+                }
+
                 ret += addee;
             }
+        }
+
+        if ( ret < 0 )
+        {
+            System.out.println(" getManhatanDistance trying to return negative value ");
+            System.out.println("ret =  " + ret);
+            System.exit(0);
         }
 
         return ret;
@@ -222,7 +273,7 @@ class Grid implements Comparable<Grid>
     double getHeuristics( Grid goalGrid )
     {
         int manDis = this.getManhatanDistance(goalGrid);
-        double ret = manDis / 1.0 * this.size;
+        double ret = manDis / ( 1.0 * this.size);
         return ret;
     }
 
@@ -279,19 +330,28 @@ class Grid implements Comparable<Grid>
 }
 
 
-class Node implements Comparable<Node>
+class Node  implements Comparable<Node>
 {
     double fVal;
     Grid grid;
     Node(){}
 
     public Node(double fVal, Grid grid) {
+        if ( fVal < 0 )
+        {
+            System.out.println("fVal < 0");
+            System.exit(0);
+        }
         this.fVal = fVal;
         this.grid = grid;
     }
 
     @Override
     public int compareTo(Node o) {
+
+
+
+
         if ( this.fVal == o.fVal )
         {
             return this.grid.compareTo( o.grid );
@@ -308,6 +368,14 @@ class Node implements Comparable<Node>
 
         return 0;
     }
+
+    @Override
+    public String toString() {
+        return "Node{" +
+                "fVal=" + fVal +
+                ", grid=" + grid +
+                '}';
+    }
 }
 
 
@@ -321,6 +389,35 @@ class Solver
     Grid goalGrid;
     static Scanner scanner = new Scanner(System.in);
 
+
+    void printPQ( PriorityQueue<Node> toPrint )
+    {
+        toPrint = new PriorityQueue<Node>(toPrint);
+        while ( toPrint.size() > 0 )
+        {
+            Node node = toPrint.poll();
+            System.out.println(node);
+        }
+    }
+
+    void checkPQ( PriorityQueue<Node> toCheck )
+    {
+        toCheck = new PriorityQueue<Node>(toCheck);
+        double curFVal = Double.MIN_VALUE;
+        while ( toCheck.size() > 0 )
+        {
+            Node node = toCheck.poll();
+            if ( node.fVal < curFVal )
+            {
+                System.out.println(" Priority Queu is not working properly ");
+                System.exit( 0 );
+            }
+            curFVal = Double.max(curFVal, node.fVal);
+//            System.out.println(node);
+        }
+    }
+
+
     int aStar()
     {
 //        Hashtable<Grid, Integer> closedTable = new Hashtable<Grid, Integer>();
@@ -328,9 +425,13 @@ class Solver
 //        Hashtable<Grid, Integer> openTable = new Hashtable<Grid, Integer>();
 //        openTable.put(initialGrid, 1);
 
-        PriorityQueue<Node> priorityQueue = new PriorityQueue<Node>();
-        priorityQueue.add( new Node( -initialGrid.getHeuristics(goalGrid), initialGrid ) );
+        System.out.println("start of aStar");
 
+        PriorityQueue<Node> priorityQueue = new PriorityQueue<Node>();
+        Node firstNode = new Node( initialGrid.getHeuristics(goalGrid), initialGrid );
+        priorityQueue.add( firstNode );
+
+        System.out.println("priority queue is initialized");
 
 
         Hashtable<Grid, Move> cameFrom = new Hashtable<Grid, Move>();
@@ -343,10 +444,24 @@ class Solver
 
         while ( priorityQueue.size() > 0 )
         {
+
+            System.out.println( "priorityQueue.size() = " + priorityQueue.size() );
+//            System.out.println("printing priorityQueue");
+//            printPQ( priorityQueue );
+
+//            checkPQ( priorityQueue );
+
+
             Node currentNode = priorityQueue.poll();
 
+            System.out.println( "currentNode = " + currentNode );
+
+            System.out.println(  );
+
             Grid currentGrid = currentNode.grid;
-            double currentFScore = -currentNode.fVal;
+            double currentFScore = currentNode.fVal;
+
+            assert  currentFScore >= 0  : "currentFScore can't be < 0 ";
 
             int currentGScore = gScore.get( currentGrid );
 
@@ -362,8 +477,10 @@ class Solver
             }
 
 
-            ArrayList<Pair<Grid,Move>> NeighborAr = currentGrid.getAllChildren();
-            for ( Pair<Grid,Move> pair : NeighborAr )
+            ArrayList<Pair<Grid,Move>> neighborAr = currentGrid.getAllChildren();
+            System.out.println( "NeighborAr = " + neighborAr );
+            System.out.println(  " neighborAr.size() = " + neighborAr.size() );
+            for ( Pair<Grid,Move> pair : neighborAr )
             {
                 Grid child = pair.getKey();
                 Move move = pair.getValue();
@@ -374,6 +491,7 @@ class Solver
                     continue;
                 }
 
+                priorityQueue.add( new Node(tentativeFScore, child) );
                 cameFrom.put(child, move);
                 gScore.put(child, tentativeGScore);
                 fScore.put( child, tentativeFScore );
@@ -419,10 +537,15 @@ class Solver
             for (int j = 0; j < size; j++)
             {
                 grid[i][j] = scanner.nextInt();
+                System.out.println( grid[i][j] );
                 grid[i][j]--;
             }
         }
         initialGrid = new Grid(size, grid);
+
+        System.out.println("initial grid input tatken");
+        System.out.println( initialGrid );
+
 
         for (int i = 0; i < size; i++)
         {
@@ -433,6 +556,11 @@ class Solver
             }
         }
         goalGrid = new Grid(size, grid);
+
+        System.out.println("goalGrid input taken");
+        System.out.println( goalGrid );
+
+        assert false : "forced assertion";
 
     }
 
