@@ -73,6 +73,10 @@ class Grid implements Comparable<Grid>
     int ar[][];
 
 
+
+    
+
+
     @Override
     public String toString() {
         String ret = "";
@@ -309,11 +313,17 @@ class Grid implements Comparable<Grid>
         return ret;
     }
 
-    double getHeuristics( Grid goalGrid )
+    double getHeuristics( List<Grid> goalGridList )
     {
 //        System.out.println( "in getHeuristics" );
 //        System.out.println( "goalGrid = " + goalGrid );
-        int manDis = this.getManhatanDistance(goalGrid);
+        int manDis = size * size;
+        for ( Grid g : goalGridList )
+        {
+            int possibleManDis = this.getManhatanDistance(g);
+            manDis = Integer.min(manDis, possibleManDis);
+        }
+
         double ret = manDis / ( 1.0 * this.size);
 //        System.out.println( " returning heuristics =  " + ret );
         return ret;
@@ -426,7 +436,11 @@ class Solver
 
     int size;
     Grid initialGrid;
-    Grid goalGrid;
+    //Grid goalGrid;
+    ArrayList<Grid> singleGoalGrid;
+    ArrayList<Grid> multipleGoalGrid;
+
+
     static Scanner scanner = new Scanner(System.in);
 
     List< Pair<Move, Grid> > getAnsMoveGrid(Grid lastGrid, Hashtable<Grid, Pair<Move, Grid>> cameFrom)
@@ -473,7 +487,7 @@ class Solver
     }
 
 
-    List< Pair<Move, Grid> > aStar()
+    List< Pair<Move, Grid> > aStar( List<Grid> goalGridList )
     {
 //        Hashtable<Grid, Integer> closedTable = new Hashtable<Grid, Integer>();
 
@@ -485,7 +499,7 @@ class Solver
         List< Pair<Move, Grid> > ret = new ArrayList< Pair<Move, Grid> >();
 
         PriorityQueue<Node> priorityQueue = new PriorityQueue<Node>();
-        Node firstNode = new Node( initialGrid.getHeuristics(goalGrid), initialGrid );
+        Node firstNode = new Node( initialGrid.getHeuristics(goalGridList), initialGrid );
         priorityQueue.add( firstNode );
 
         System.out.println("priority queue is initialized");
@@ -497,7 +511,7 @@ class Solver
         gScore.put(initialGrid, 0);
 
         Hashtable<Grid, Double> fScore = new Hashtable<Grid, Double>();
-        fScore.put( initialGrid, initialGrid.getHeuristics(goalGrid) );
+        fScore.put( initialGrid, initialGrid.getHeuristics(goalGridList) );
 
         while ( priorityQueue.size() > 0 )
         {
@@ -527,7 +541,7 @@ class Solver
                 continue;
             }
 
-            if ( currentGrid.getHeuristics( goalGrid ) == 0 )
+            if ( currentGrid.getHeuristics( goalGridList ) == 0 )
             {
                 System.out.println(" Total move needed = " + gScore.get(currentGrid) );
                 System.out.println( "fScore of goalGrid = " + fScore.get(currentGrid) );
@@ -544,7 +558,7 @@ class Solver
                 Grid child = pair.getKey();
                 Move currentMove = pair.getValue();
                 int tentativeGScore = currentGScore+1;
-                double childHVal = child.getHeuristics(goalGrid);
+                double childHVal = child.getHeuristics(goalGridList);
                 double tentativeFScore = tentativeGScore + childHVal;
                 if ( gScore.containsKey(child) && gScore.get(child)<=tentativeGScore )
                 {
@@ -571,18 +585,18 @@ class Solver
                 cameFrom.put(child, new Pair<Move, Grid>(currentMove, currentGrid));
 
 
-                if ( child.compareTo(goalGrid)==0 )
-                {
-                    System.out.println("currentGScore = " + currentGScore);
-                    System.out.println( "currentFScore = " + currentFScore );
-                    System.out.println( "currentHVal = " + currentGrid.getHeuristics(goalGrid) );
-                    System.out.println( "currentGrid = " + currentGrid );
-
-
-                    System.out.println( "tentativeGScore = " + tentativeGScore );
-                    System.out.println("tentativeFScore = " + tentativeFScore);
-                    System.out.println("childHVal = " + childHVal);
-                }
+//                if ( child.compareTo(goalGridList)==0 )
+//                {
+//                    System.out.println("currentGScore = " + currentGScore);
+//                    System.out.println( "currentFScore = " + currentFScore );
+//                    System.out.println( "currentHVal = " + currentGrid.getHeuristics(goalGridList) );
+//                    System.out.println( "currentGrid = " + currentGrid );
+//
+//
+//                    System.out.println( "tentativeGScore = " + tentativeGScore );
+//                    System.out.println("tentativeFScore = " + tentativeFScore);
+//                    System.out.println("childHVal = " + childHVal);
+//                }
 
 
                 gScore.put(child, tentativeGScore);
@@ -598,7 +612,11 @@ class Solver
 
 
 
-    public Solver() {}
+    public Solver()
+    {
+        singleGoalGrid = new ArrayList<Grid>();
+        multipleGoalGrid = new ArrayList<Grid>();
+    }
 
     void takeInput()
     {
@@ -609,7 +627,7 @@ class Solver
 //        System.out.println("new scanner created ");
         size = scanner.nextInt();
 
-        System.out.println("size = " + size);
+//        System.out.println("size = " + size);
 
 
 
@@ -629,14 +647,14 @@ class Solver
             for (int j = 0; j < size; j++)
             {
                 grid[i][j] = scanner.nextInt();
-                System.out.println( grid[i][j] );
+//                System.out.println( grid[i][j] );
                 grid[i][j]--;
             }
         }
         initialGrid = new Grid(size, grid);
 
         System.out.println("initial grid input tatken");
-        System.out.println( initialGrid );
+//        System.out.println( initialGrid );
 
 
         for (int i = 0; i < size; i++)
@@ -647,12 +665,11 @@ class Solver
                 grid[i][j]--;
             }
         }
-        goalGrid = new Grid(size, grid);
+        singleGoalGrid.add( new Grid(size, grid) );
 
         System.out.println("goalGrid input taken");
-        System.out.println( goalGrid );
+//        System.out.println( singleGoalGrid.get(0) );
 
-        assert false : "forced assertion";
 
     }
 
@@ -665,8 +682,8 @@ class Solver
         System.out.println(initialGrid.toString());
 
 
-        System.out.println("Goal grid");
-        System.out.println( goalGrid.toString() );
+        System.out.println("Single Goal grid");
+        System.out.println( singleGoalGrid.toString() );
     }
 
 
@@ -678,7 +695,7 @@ class Solver
         takeInput();
         printInput();
 
-        List< Pair<Move, Grid> > ansList = aStar();
+        List< Pair<Move, Grid> > ansList = aStar( singleGoalGrid );
 
 
         String ret = "" + ansList;
@@ -722,7 +739,7 @@ public class Main {
     public static void main(String[] args) {
         redirectIO();
 
-        System.out.println("My name is Nafee");
+//        System.out.println("My name is Nafee");
 
         while (true)
         {
