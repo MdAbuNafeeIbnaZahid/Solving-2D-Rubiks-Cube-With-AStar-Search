@@ -1,4 +1,5 @@
 
+import com.sun.org.apache.bcel.internal.generic.MONITORENTER;
 import javafx.util.Pair;
 
 import java.io.*;
@@ -12,12 +13,28 @@ import java.util.*;
 
 class Move
 {
+
     static final int LEFT = 1;
     static final int RIGHT = 2;
     static final int UP = 3;
     static final int DOWN = 4;
     static final int ROW = 5;
     static final int COL = 6;
+
+
+    static final Map<Integer, String> intToActString;
+    static {
+        Map<Integer, String> aMap = new HashMap<Integer, String>();
+
+        aMap.put(LEFT, "LEFT");
+        aMap.put(RIGHT, "RIGHT");
+        aMap.put(UP, "UP");
+        aMap.put(DOWN, "DOWN");
+        aMap.put(ROW, "ROW");
+        aMap.put(COL, "COLUMN");
+
+        intToActString = Collections.unmodifiableMap(aMap);
+    }
 
 
 
@@ -34,11 +51,13 @@ class Move
 
     @Override
     public String toString() {
-        return "Move{" +
-                "rowOrCol=" + rowOrCol +
-                ", rowColNum=" + rowColNum +
-                ", typ=" + typ +
-                '}';
+        String ret = "";
+        ret += "Move" + "\n";
+        ret += intToActString.get(rowOrCol) + ", ";
+        ret += rowColNum + ", " ;
+        ret += intToActString.get(typ);
+        ret += "\n";
+        return ret;
     }
 }
 
@@ -54,7 +73,23 @@ class Grid implements Comparable<Grid>
     int ar[][];
 
 
-    Grid getChild( Move move )
+    @Override
+    public String toString() {
+        String ret = "";
+        ret += "size = " + size + "\n";
+        for (int i = 0; i < size; i++)
+        {
+            for (int j = 0; j < size; j++)
+            {
+                ret += ar[i][j] + " ";
+            }
+            ret += "\n";
+        }
+        return ret;
+
+    }
+
+    Grid getChild(Move move )
     {
         int rowOrCol = move.rowOrCol;
         int rowColNum = move.rowColNum;
@@ -291,13 +326,7 @@ class Grid implements Comparable<Grid>
         return Arrays.deepHashCode( ar );
     }
 
-    @Override
-    public String toString() {
-        return "Grid{" +
-                "size=" + size +
-                ", ar=" + Arrays.deepToString(ar) +
-                '}';
-    }
+
 
     @Override
     public int compareTo(Grid o) {
@@ -400,6 +429,21 @@ class Solver
     Grid goalGrid;
     static Scanner scanner = new Scanner(System.in);
 
+    List< Pair<Move, Grid> > getAnsMoveGrid(Grid lastGrid, Hashtable<Grid, Pair<Move, Grid>> cameFrom)
+    {
+        List< Pair<Move, Grid> > ret = new ArrayList< Pair<Move, Grid> >();
+        Grid currentGrid = lastGrid;
+        while ( currentGrid.compareTo(initialGrid) != 0 )
+        {
+            Move currentMove = cameFrom.get( currentGrid ).getKey();
+            Pair<Move, Grid> addee = new Pair<Move, Grid>(currentMove, currentGrid);
+            ret.add(  addee  );
+            currentGrid = (cameFrom.get(currentGrid) ).getValue();
+        }
+        Collections.reverse( ret );
+        return ret;
+    }
+
 
     void printPQ( PriorityQueue<Node> toPrint )
     {
@@ -429,7 +473,7 @@ class Solver
     }
 
 
-    int aStar()
+    List< Pair<Move, Grid> > aStar()
     {
 //        Hashtable<Grid, Integer> closedTable = new Hashtable<Grid, Integer>();
 
@@ -438,6 +482,8 @@ class Solver
 
         System.out.println("start of aStar");
 
+        List< Pair<Move, Grid> > ret = new ArrayList< Pair<Move, Grid> >();
+
         PriorityQueue<Node> priorityQueue = new PriorityQueue<Node>();
         Node firstNode = new Node( initialGrid.getHeuristics(goalGrid), initialGrid );
         priorityQueue.add( firstNode );
@@ -445,7 +491,7 @@ class Solver
         System.out.println("priority queue is initialized");
 
 
-        Hashtable<Grid, Move> cameFrom = new Hashtable<Grid, Move>();
+        Hashtable<Grid, Pair<Move, Grid>> cameFrom = new Hashtable<Grid, Pair<Move, Grid> >();
 
         Hashtable<Grid, Integer> gScore = new Hashtable<Grid, Integer>();
         gScore.put(initialGrid, 0);
@@ -486,7 +532,7 @@ class Solver
                 System.out.println(" Total move needed = " + gScore.get(currentGrid) );
                 System.out.println( "fScore of goalGrid = " + fScore.get(currentGrid) );
                 System.out.println( " fScore.size() = " + fScore.size() );
-                return gScore.get(currentGrid);
+                return getAnsMoveGrid( currentGrid, cameFrom );
             }
 
 
@@ -496,7 +542,7 @@ class Solver
             for ( Pair<Grid,Move> pair : neighborAr )
             {
                 Grid child = pair.getKey();
-                Move move = pair.getValue();
+                Move currentMove = pair.getValue();
                 int tentativeGScore = currentGScore+1;
                 double childHVal = child.getHeuristics(goalGrid);
                 double tentativeFScore = tentativeGScore + childHVal;
@@ -522,7 +568,7 @@ class Solver
 //                }
 
                 priorityQueue.add( new Node(tentativeFScore, child) );
-                cameFrom.put(child, move);
+                cameFrom.put(child, new Pair<Move, Grid>(currentMove, currentGrid));
 
 
                 if ( child.compareTo(goalGrid)==0 )
@@ -545,7 +591,7 @@ class Solver
             }
         }
 
-        return -1;
+        return null;
 
     }
 
@@ -632,10 +678,10 @@ class Solver
         takeInput();
         printInput();
 
-        int ans = aStar();
+        List< Pair<Move, Grid> > ansList = aStar();
 
 
-        String ret = "" + ans;
+        String ret = "" + ansList;
         return  ret;
     }
 }
@@ -675,6 +721,8 @@ public class Main {
 
     public static void main(String[] args) {
         redirectIO();
+
+        System.out.println("My name is Nafee");
 
         while (true)
         {
