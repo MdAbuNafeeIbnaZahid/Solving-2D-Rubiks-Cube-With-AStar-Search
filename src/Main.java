@@ -276,8 +276,11 @@ class Grid implements Comparable<Grid>
 
     double getHeuristics( Grid goalGrid )
     {
+//        System.out.println( "in getHeuristics" );
+//        System.out.println( "goalGrid = " + goalGrid );
         int manDis = this.getManhatanDistance(goalGrid);
         double ret = manDis / ( 1.0 * this.size);
+//        System.out.println( " returning heuristics =  " + ret );
         return ret;
     }
 
@@ -482,6 +485,7 @@ class Solver
             {
                 System.out.println(" Total move needed = " + gScore.get(currentGrid) );
                 System.out.println( "fScore of goalGrid = " + fScore.get(currentGrid) );
+                System.out.println( " fScore.size() = " + fScore.size() );
                 return gScore.get(currentGrid);
             }
 
