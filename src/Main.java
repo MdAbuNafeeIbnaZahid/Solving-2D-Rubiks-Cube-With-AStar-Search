@@ -74,7 +74,37 @@ class Grid implements Comparable<Grid>
 
 
 
-    
+    Grid getClockwise90DegRotatedGrid()
+    {
+        int newAr[][] = new int[size][size];
+        for (int oldRow = 0; oldRow < size; oldRow++)
+        {
+            for (int oldCol = 0; oldCol < size; oldCol++)
+            {
+                int newRow = oldCol;
+                int newCol = size-1-oldRow;
+//                System.out.println("oldRow = " + oldRow);
+//                System.out.println("oldCol = " + oldCol);
+//                System.out.println( "newRow = " + newRow );
+//                System.out.println("newCol = " + newCol);
+                newAr[newRow][newCol] = this.ar[oldRow][oldCol];
+            }
+        }
+        return new Grid( size, newAr );
+    }
+
+
+    List<Grid> getAll4RotatedGrid()
+    {
+        ArrayList<Grid> lisOfAll4RotatedGrid = new ArrayList<Grid>();
+        Grid currentGrid = new Grid(this.size, this.ar);
+        for (int i = 0; i < 4; i++)
+        {
+            lisOfAll4RotatedGrid.add( currentGrid );
+            currentGrid = currentGrid.getClockwise90DegRotatedGrid();
+        }
+        return lisOfAll4RotatedGrid;
+    }
 
 
     @Override
@@ -186,6 +216,18 @@ class Grid implements Comparable<Grid>
     }
 
 
+    public Grid( Grid seed )
+    {
+        this.size = seed.size;
+        this.ar = new int[seed.size][seed.size];
+        for (int i = 0; i < size; i++  )
+        {
+            for (int j = 0; j < size; j++)
+            {
+                this.ar[i][j] = seed.ar[i][j];
+            }
+        }
+    }
 
 
     public Grid(int size, int[][] ar) {
@@ -437,8 +479,8 @@ class Solver
     int size;
     Grid initialGrid;
     //Grid goalGrid;
-    ArrayList<Grid> singleGoalGrid;
-    ArrayList<Grid> multipleGoalGrid;
+    List<Grid> singleGoalGrid;
+    List<Grid> multipleGoalGrid;
 
 
     static Scanner scanner = new Scanner(System.in);
@@ -667,6 +709,8 @@ class Solver
         }
         singleGoalGrid.add( new Grid(size, grid) );
 
+
+
         System.out.println("goalGrid input taken");
 //        System.out.println( singleGoalGrid.get(0) );
 
@@ -692,13 +736,25 @@ class Solver
     String solve()
     {
         System.out.println( "In solver" );
+        String ret = "";
         takeInput();
         printInput();
 
+        multipleGoalGrid = singleGoalGrid.get(0).getAll4RotatedGrid();
+        System.out.println("printing multipleGoals");
+        System.out.println( multipleGoalGrid );
+
+        ret += "Single goal Grid\n";
         List< Pair<Move, Grid> > ansList = aStar( singleGoalGrid );
+        ret += "\n" + "Total move needed = " + ansList.size() + "\n";
+        ret += "\n" +  ansList + "\n";
 
 
-        String ret = "" + ansList;
+        ret += "\nAny Goal Grid\n";
+        ansList = aStar( multipleGoalGrid );
+        ret += "\n" + "Total move needed = " + ansList.size() + "\n";
+        ret += "\n" + ansList + "\n";
+
         return  ret;
     }
 }
